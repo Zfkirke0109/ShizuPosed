@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -641,12 +641,8 @@ public class SettingsFragment extends Fragment {
             IntentFilter filter = new IntentFilter(
                 ShizuPosedService.ACTION_LAUNCH_RESULT);
             Context ctx = requireContext().getApplicationContext();
-            if (Build.VERSION.SDK_INT >= 33) {
-                ctx.registerReceiver(maintenanceReceiver, filter,
-                    Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                ctx.registerReceiver(maintenanceReceiver, filter);
-            }
+            ContextCompat.registerReceiver(ctx, maintenanceReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED);
             maintenanceReceiverRegistered = true;
         } catch (Throwable t) {
             if (logger != null) {

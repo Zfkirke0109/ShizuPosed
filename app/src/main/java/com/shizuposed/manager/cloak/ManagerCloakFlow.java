@@ -35,6 +35,10 @@ public final class ManagerCloakFlow {
     public static void run(String newPackageName,
                            String newLabel,
                            ProgressListener listener) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) {
+            listener.onError("Manager cloaking is disabled in S26 QA");
+            return;
+        }
         Context ctx = ShizuPosedManagerApp.getInstance();
         if (ctx == null) {
             listener.onError("No application context");
@@ -232,6 +236,10 @@ public final class ManagerCloakFlow {
      * launchable.
      */
     public static void revertToOriginal(ProgressListener listener) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) {
+            listener.onError("Manager cloaking is disabled in S26 QA");
+            return;
+        }
         Context ctx = ShizuPosedManagerApp.getInstance();
         if (ctx == null) {
             listener.onError("No application context");

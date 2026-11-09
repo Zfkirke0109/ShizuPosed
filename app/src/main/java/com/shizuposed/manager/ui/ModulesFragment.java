@@ -33,6 +33,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -479,12 +480,8 @@ public class ModulesFragment extends Fragment {
 
             IntentFilter filter = new IntentFilter(ACTION_LAUNCH_RESULT);
             Context ctx = requireContext().getApplicationContext();
-            if (Build.VERSION.SDK_INT >= 33) {
-                ctx.registerReceiver(launchResultReceiver, filter,
-                    Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                ctx.registerReceiver(launchResultReceiver, filter);
-            }
+            ContextCompat.registerReceiver(ctx, launchResultReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED);
             launchReceiverRegistered = true;
         } catch (Throwable t) {
             if (logger != null) {

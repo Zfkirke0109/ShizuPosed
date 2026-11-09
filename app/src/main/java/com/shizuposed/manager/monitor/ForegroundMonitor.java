@@ -157,6 +157,7 @@ public final class ForegroundMonitor {
      * annotation is scoped to the smallest possible region and the
      * rest of hasUsageStatsPermission() stays clean.
      */
+    @androidx.annotation.RequiresApi(29)
     @SuppressWarnings("deprecation")
     private int unsafeCheckOpNoThrowQ(AppOpsManager appOps) {
         return appOps.unsafeCheckOpNoThrow(

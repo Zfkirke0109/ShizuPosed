@@ -19,14 +19,17 @@ import android.provider.Settings;
 import androidx.core.app.NotificationCompat;
 
 import com.google.gson.Gson;
+import com.shizuposed.manager.BuildConfig;
 import com.shizuposed.manager.R;
 import com.shizuposed.manager.ShizukuHelper;
 import com.shizuposed.manager.ShizuPosedManagerApp;
 import com.shizuposed.manager.core.MarkerCache;
 import com.shizuposed.manager.core.ModuleLoader;
 import com.shizuposed.manager.core.ProcessMonitor;
+import com.shizuposed.manager.core.S26BootstrapTestScope;
 import com.shizuposed.manager.model.ModuleInfo;
 import com.shizuposed.manager.runtime.RuntimePrefs;
+import com.shizuposed.manager.status.ModuleStatusProvider;
 import com.shizuposed.manager.utils.FileUtils;
 import com.shizuposed.manager.utils.Logger;
 import com.shizuposed.manager.utils.ShellUtils;
@@ -88,7 +91,9 @@ public class ShizuPosedService extends Service {
 
     public static final String MAINTENANCE_RESULT_PKG = "__logs__";
 
-    private static final String[] SHELL_BASE_CANDIDATES = {
+    private static final String[] SHELL_BASE_CANDIDATES = BuildConfig.S26_BOOTSTRAP_TEST
+        ? new String[] { S26BootstrapTestScope.SHELL_BASE }
+        : new String[] {
         "/data/user/0/com.android.shell/files/.syscall_cache",
         "/data/local/tmp/shizuposed",
     };
@@ -191,6 +196,7 @@ public class ShizuPosedService extends Service {
     // ═════════════════════════════════════════════════════════════
 
     public static String getResolvedShellBase() {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) return S26BootstrapTestScope.SHELL_BASE;
         String b = sResolvedShellBase;
         if (b != null) return b;
 
@@ -840,6 +846,7 @@ public class ShizuPosedService extends Service {
      * detecting.
      */
     private boolean writeGlobalSetting(String key, String value) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) return false;
         try {
             int intValue = -1;
             boolean isInt = true;
@@ -1931,6 +1938,12 @@ private boolean isSyskuGateLive(String base) {
                 for (ModuleInfo module : modules) {
                     if (module == null || !module.enabled) continue;
 
+                    if (BuildConfig.S26_BOOTSTRAP_TEST
+                            && !S26BootstrapTestScope.allowsModule(module.packageName,
+                                module.hookedApps, module.hookAllApps, module.hookSystemApps)) {
+                        continue;
+                    }
+
                     if (com.shizuposed.manager.stealth.XStealthModule.PACKAGE
                             .equals(module.packageName)) {
                         continue;
@@ -2359,6 +2372,12 @@ private boolean isSyskuGateLive(String base) {
                                              AtomicBoolean sent,
                                              boolean openUi,
                                              boolean notifyUi) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST && !S26BootstrapTestScope.allowsTarget(packageName)) {
+            if (notifyUi) {
+                broadcastOnce(packageName, sent, false, "S26 QA only launches the CodePath demo");
+            }
+            return false;
+        }
         if (!shizukuHelper.isAuthorized()) {
             logger.w("Shizuku not authorized, cannot launch "
                 + packageName);
@@ -2435,8 +2454,9 @@ private boolean isSyskuGateLive(String base) {
 
             String spawnPrefix = buildSpawnPrefix();
 
+            // app_process consumes a command directory before the Java main class.
             String inner =
-                "unset CLASSPATH; unset BOOTCLASSPATH; "
+                "unset CLASSPATH; "
                 + "( "
                 +   (spawnPrefix.isEmpty() ? "" : spawnPrefix + " ")
                 +   binary + " "
@@ -2451,7 +2471,7 @@ private boolean isSyskuGateLive(String base) {
                 +       getStatusAuthority() + " "
                 +   "-Dshizuposed.manager.package="
                 +       getPackageName() + " "
-                +   "com.shizuposed.manager.core.XposedHook "
+                +   "/system/bin com.shizuposed.manager.core.XposedHook "
                 +   packageName + " 0 " + targetUid
                 +   " </dev/null >>" + logPath + " 2>&1 "
                 + "& ) "
@@ -2788,7 +2808,7 @@ private boolean isSyskuGateLive(String base) {
                 logger.d("getStatusAuthority failed: " + t.getMessage());
             }
         }
-        return "com.shizuposed.manager.status";
+        return ModuleStatusProvider.AUTHORITY;
     }
 
     // ═════════════════════════════════════════════════════════════

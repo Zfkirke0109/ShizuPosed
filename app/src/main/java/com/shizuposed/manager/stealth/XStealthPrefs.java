@@ -3,6 +3,8 @@ package com.shizuposed.manager.stealth;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.shizuposed.manager.BuildConfig;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -92,6 +94,7 @@ public final class XStealthPrefs {
     // ─── Master toggle ────────────────────────────────────────────
 
     public static boolean isEnabled(Context c) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) return false;
         migrateIfNeeded(c);
         return prefs(c).getBoolean(KEY_ENABLED, false);
     }
@@ -103,7 +106,7 @@ public final class XStealthPrefs {
     // ─── XStealth Next ────────────────────────────────────────────
 
     public static boolean isNextEnabled(Context c) {
-        return prefs(c).getBoolean(KEY_NEXT_ENABLED, false);
+        return !BuildConfig.S26_BOOTSTRAP_TEST && prefs(c).getBoolean(KEY_NEXT_ENABLED, false);
     }
 
     public static void setNextEnabled(Context c, boolean v) {
@@ -169,7 +172,7 @@ public final class XStealthPrefs {
     }
 
     public static boolean isDexOptimizeEnabled(Context c) {
-        return prefs(c).getBoolean(KEY_DEX_OPTIMIZE, false);
+        return !BuildConfig.S26_BOOTSTRAP_TEST && prefs(c).getBoolean(KEY_DEX_OPTIMIZE, false);
     }
 
     public static void setDexOptimizeEnabled(Context c, boolean v) {
@@ -211,7 +214,7 @@ public final class XStealthPrefs {
     }
 
     public static boolean isBridgeEnabled(Context c) {
-        return prefs(c).getBoolean(KEY_BRIDGE_ENABLED, false);
+        return !BuildConfig.S26_BOOTSTRAP_TEST && prefs(c).getBoolean(KEY_BRIDGE_ENABLED, false);
     }
 
     public static void setBridgeEnabled(Context c, boolean v) {
@@ -308,6 +311,7 @@ public final class XStealthPrefs {
     // aggressive background killers.
 
     public static Set<String> getSmartForegroundScope(Context c) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) return Collections.emptySet();
         try {
             Set<String> stored = prefs(c).getStringSet(
                 KEY_SMART_FG_SCOPE, null);
