@@ -2436,7 +2436,7 @@ private boolean isSyskuGateLive(String base) {
             String spawnPrefix = buildSpawnPrefix();
 
             String inner =
-                "unset CLASSPATH; unset BOOTCLASSPATH; "
+                "unset CLASSPATH; "
                 + "( "
                 +   (spawnPrefix.isEmpty() ? "" : spawnPrefix + " ")
                 +   binary + " "
