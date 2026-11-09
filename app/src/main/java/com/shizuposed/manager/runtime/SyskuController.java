@@ -3,6 +3,7 @@ package com.shizuposed.manager.runtime;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.shizuposed.manager.BuildConfig;
 import com.shizuposed.manager.ShizukuHelper;
 import com.shizuposed.manager.service.ShizuPosedService;
 import com.shizuposed.manager.stealth.SyskuNative;
@@ -109,7 +110,7 @@ public final class SyskuController {
     // ═════════════════════════════════════════════════════════════
 
     public static boolean isEnabled(Context ctx) {
-        if (ctx == null) return false;
+        if (BuildConfig.S26_BOOTSTRAP_TEST || ctx == null) return false;
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getBoolean(KEY_ENABLED, false);
     }
@@ -129,7 +130,7 @@ public final class SyskuController {
      * "why does it say Not installed?" surprise.
      */
     public static void setEnabled(Context ctx, boolean enabled) {
-        if (ctx == null) return;
+        if (BuildConfig.S26_BOOTSTRAP_TEST || ctx == null) return;
 
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_ENABLED, enabled).apply();

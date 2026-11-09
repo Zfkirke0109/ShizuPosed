@@ -12,6 +12,7 @@ import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
 
+import com.shizuposed.manager.BuildConfig;
 import com.shizuposed.manager.R;
 import com.shizuposed.manager.utils.Logger;
 
@@ -67,7 +68,7 @@ public final class UpdateChecker {
      *                       typically BuildConfig.VERSION_NAME
      */
     public static void checkAsync(Context context, String currentVersion) {
-        if (context == null || currentVersion == null) return;
+        if (BuildConfig.S26_BOOTSTRAP_TEST || context == null || currentVersion == null) return;
 
         final Context app = context.getApplicationContext();
         new Thread(() -> {
@@ -224,7 +225,7 @@ public final class UpdateChecker {
     public static void checkNowAsync(Context context,
                                      String currentVersion,
                                      boolean forceNotify) {
-        if (context == null || currentVersion == null) return;
+        if (BuildConfig.S26_BOOTSTRAP_TEST || context == null || currentVersion == null) return;
 
         final Context app = context.getApplicationContext();
         new Thread(() -> {

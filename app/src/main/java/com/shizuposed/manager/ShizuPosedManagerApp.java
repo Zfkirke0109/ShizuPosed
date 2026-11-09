@@ -160,6 +160,7 @@ public class ShizuPosedManagerApp extends Application {
     }
 
     private void promptForBatteryWhitelist() {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) return;
         try {
             android.os.PowerManager pm = (android.os.PowerManager)
                 getSystemService(POWER_SERVICE);

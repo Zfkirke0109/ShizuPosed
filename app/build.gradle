@@ -8,6 +8,16 @@ if (keystorePropsFile.exists()) {
     keystoreProps.load(new FileInputStream(keystorePropsFile))
 }
 
+def s26BootstrapTest = providers.gradleProperty('s26BootstrapTest')
+    .map { it == 'true' }.getOrElse(false)
+def managerId = s26BootstrapTest ? 'com.shizuposed.manager.s26test' : 'com.shizuposed.manager'
+
+androidComponents {
+    beforeVariants(selector().withBuildType('release')) { variant ->
+        if (s26BootstrapTest) variant.enable = false
+    }
+}
+
 android {
     namespace 'com.shizuposed.manager'
 
@@ -15,7 +25,7 @@ android {
     compileSdkMinor 0
 
     defaultConfig {
-        applicationId "com.shizuposed.manager"
+        applicationId managerId
         minSdk 28
         targetSdk 37
         versionCode 5730
@@ -30,11 +40,14 @@ android {
         // flow at runtime rewrites them when it rebuilds the APK
         // under a new package name.
         manifestPlaceholders = [
-            statusAuthority:       "com.shizuposed.manager.status",
-            shizukuAuthority:      "com.shizuposed.manager.shizuku",
-            watcherAuthority:      "com.shizuposed.manager.shizuku-watcher",
-            fileProviderAuthority: "com.shizuposed.manager.fileprovider",
+            statusAuthority:       "${managerId}.status",
+            shizukuAuthority:      "${managerId}.shizuku",
+            watcherAuthority:      "${managerId}.shizuku-watcher",
+            fileProviderAuthority: "${managerId}.fileprovider",
+            managerLabel:          s26BootstrapTest ? 'ShizuPosed S26 QA' : '@string/app_name',
+            managerAllowBackup:    s26BootstrapTest ? 'false' : 'true',
         ]
+        buildConfigField "boolean", "S26_BOOTSTRAP_TEST", s26BootstrapTest.toString()
 
         // ── Cloak-flow build config ───────────────────────────────
         // ORIGINAL_PACKAGE_NAME is the package this APK was built
@@ -502,10 +515,14 @@ tasks.register('makeDex') {
     def outDexProvider     = outDirProvider.map { dir -> new File(dir.asFile, 'XposedHook.dex') }
     def pineJar            = file("${projectDir}/libs/pine-0.3.0.jar")
 
+    inputs.files(classesDirProvider, alternateClassesDirProvider, pineJar,
+        makeDexPlatformJar, makeDexD8)
+    inputs.files(makeDexLibJars, makeDexAarFiles)
     outputs.dir(outDirProvider)
     outputs.file(outDexProvider)
 
     doLast {
+        def workDir = temporaryDir
         // Gradle 9.8's doLast delegate is the task, and Groovy 4
         // resolves bare names against the delegate, not the
         // closure's enclosing scope. Wrapping the body in a
@@ -539,7 +556,7 @@ tasks.register('makeDex') {
             }
 
             if (pineJar.exists()) {
-                def pineExtract = new File(outDir, 'pine-classes')
+                def pineExtract = new File(workDir, 'pine-classes')
                 pineExtract.mkdirs()
                 def pineZip = new java.util.zip.ZipFile(pineJar)
                 try {
@@ -574,7 +591,7 @@ tasks.register('makeDex') {
 
             def libJars = new ArrayList<String>(makeDexLibJars)
             for (File aar : makeDexAarFiles) {
-                def cacheDir = new File(outDir, "aar-libs/${aar.name}")
+                def cacheDir = new File(workDir, "aar-libs/${aar.name}")
                 cacheDir.mkdirs()
                 def classesJar = new File(cacheDir, 'classes.jar')
                 if (!classesJar.exists()) {

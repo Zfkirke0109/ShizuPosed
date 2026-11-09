@@ -12,6 +12,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.shizuposed.manager.BuildConfig;
 import com.shizuposed.manager.ShizukuHelper;
 import com.shizuposed.manager.core.MarkerCache;
 import com.shizuposed.manager.core.ModuleLoader;
@@ -57,7 +58,7 @@ import java.util.Map;
  */
 public class ModuleStatusProvider extends ContentProvider {
 
-    public static final String AUTHORITY = "com.shizuposed.manager.status";
+    public static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".status";
 
     public static final Uri BASE_URI    = Uri.parse("content://" + AUTHORITY);
     public static final Uri MODULES_URI = Uri.parse("content://" + AUTHORITY + "/modules");

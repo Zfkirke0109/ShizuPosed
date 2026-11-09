@@ -5,8 +5,11 @@ import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Process;
+import android.system.ErrnoException;
+import android.system.Os;
 import android.text.TextUtils;
 
+import com.shizuposed.manager.BuildConfig;
 import com.shizuposed.manager.core.compat.AndroidCompat;
 import com.shizuposed.manager.core.compat.HiddenApiBypass;
 
@@ -110,6 +113,7 @@ public class XposedHook {
     // ═════════════════════════════════════════════════════════════════
 
     private static String resolveShellBaseFromProperty() {
+        if (BuildConfig.S26_BOOTSTRAP_TEST) return S26BootstrapTestScope.SHELL_BASE;
         String fromProp = System.getProperty("shizuposed.shell.base");
         if (fromProp != null && !fromProp.isEmpty()) {
             return fromProp;
@@ -138,6 +142,10 @@ public class XposedHook {
     // ═════════════════════════════════════════════════════════════════
 
     public static void main(String[] args) {
+        if (BuildConfig.S26_BOOTSTRAP_TEST && args.length > 0
+                && !S26BootstrapTestScope.allowsTarget(args[0])) {
+            return;
+        }
         try {
             myPid = Process.myPid();
             myUid = Process.myUid();
@@ -148,14 +156,6 @@ public class XposedHook {
             moduleInstances.clear();
 
             initDirectories();
-
-            preloadXStealthNative();
-
-            try {
-                com.shizuposed.manager.stealth.ThreadNameScrub.scrub();
-            } catch (Throwable t) {
-                log("ThreadNameScrub failed: " + t.getMessage());
-            }
 
             logBox("XposedHook", "pid=" + myPid + " uid=" + myUid
                 + " " + AndroidCompat.describe()
@@ -191,9 +191,28 @@ public class XposedHook {
                 return;
             }
 
-            loadNativeLibs();
+            if (!BuildConfig.S26_BOOTSTRAP_TEST) {
+                preloadXStealthNative();
+                try {
+                    com.shizuposed.manager.stealth.ThreadNameScrub.scrub();
+                } catch (Throwable t) {
+                    log("ThreadNameScrub failed: " + t.getMessage());
+                }
+            }
 
+            loadNativeLibs();
             boolean useBootstrap = (targetUid > 0);
+            if (useBootstrap && targetUid != myUid) {
+                if (!switchToUser(targetUid)) {
+                    String reason = targetPackage + "|pid=" + myPid
+                        + "|uid=" + myUid + "|targetUid=" + targetUid;
+                    log("Refusing to load modules under the wrong UID: " + reason);
+                    writeStatus("UID_MISMATCH", reason);
+                    return;
+                }
+                myUid = Process.myUid();
+                log("Switched to target uid " + myUid);
+            }
 
             HookEngine.ensureBackendInstalled();
 
@@ -461,17 +480,6 @@ public class XposedHook {
 
     private static boolean runBootstrapMode(String pkg) {
         try {
-            if (targetUid > 0 && targetUid != myUid) {
-                boolean switched = switchToUser(targetUid);
-                if (switched) {
-                    myUid = Process.myUid();
-                    log("Switched to target uid " + myUid);
-                } else {
-                    log("Continuing as uid " + myUid
-                        + " (target uid " + targetUid + ")");
-                }
-            }
-
             ApplicationInfo appInfo = resolveApplicationInfo(pkg);
             if (appInfo == null) {
                 log("Could not resolve ApplicationInfo for " + pkg);
@@ -943,23 +951,14 @@ public class XposedHook {
     // BOOTSTRAP HELPERS
     // ═════════════════════════════════════════════════════════════════
 
+    @SuppressWarnings("deprecation")
     private static boolean switchToUser(int uid) {
-        if (uid <= 0) return false;
         try {
-            Class<?> osProcess = Class.forName("android.os.Process");
-            Method setUid = osProcess.getDeclaredMethod("setUid", int.class);
-            Method setGid = osProcess.getDeclaredMethod("setGid", int.class);
-            HiddenApiBypass.forceAccessible(setUid);
-            HiddenApiBypass.forceAccessible(setGid);
-
-            setGid.invoke(null, uid);
-            setUid.invoke(null, uid);
-
-            Method myUid = osProcess.getMethod("myUid");
-            int current = (Integer) myUid.invoke(null);
-            return current == uid;
-        } catch (Throwable t) {
-            log("switchToUser(" + uid + ") failed: " + t.getMessage());
+            Os.setgid(uid);
+            Os.setuid(uid);
+            return Process.myUid() == uid;
+        } catch (ErrnoException e) {
+            log("switchToUser(" + uid + ") failed: " + e.getMessage());
             return false;
         }
     }
@@ -1308,6 +1307,11 @@ public class XposedHook {
                 ModuleInfo info = parseModule(json);
                 if (info == null) continue;
                 if (!info.enabled) continue;
+                if (BuildConfig.S26_BOOTSTRAP_TEST
+                        && !S26BootstrapTestScope.allowsModule(info.packageName,
+                            info.hookedApps, info.hookAllApps, info.hookSystemApps)) {
+                    continue;
+                }
 
                 boolean isBuiltIn = isBuiltInModule(info.packageName);
 

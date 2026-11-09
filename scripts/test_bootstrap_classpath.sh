@@ -26,4 +26,10 @@ if ! grep -Fq 'app_process' "$service"; then
   exit 1
 fi
 
+if ! grep -Fq '"/system/bin com.shizuposed.manager.core.XposedHook "' "$service"; then
+  echo "FAIL: app_process requires a command directory before the bootstrap class" >&2
+  exit 1
+fi
+
 echo "PASS: launcher preserves BOOTCLASSPATH and DEX2OATBOOTCLASSPATH"
+echo "PASS: launcher passes a command directory before XposedHook"

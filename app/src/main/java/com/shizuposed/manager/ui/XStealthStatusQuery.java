@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.net.Uri;
 
 import com.shizuposed.manager.stealth.XStealthModule;
+import com.shizuposed.manager.status.ModuleStatusProvider;
 
 /**
  * XStealthStatusQuery
@@ -22,8 +23,7 @@ final class XStealthStatusQuery {
         if (c == null) return false;
         try {
             ContentResolver cr = c.getContentResolver();
-            Uri uri = Uri.parse("content://com.shizuposed.manager.status"
-                + "/active/" + XStealthModule.PACKAGE);
+            Uri uri = ModuleStatusProvider.activeUri(XStealthModule.PACKAGE);
             try (Cursor cur = cr.query(uri, null, null, null, null)) {
                 if (cur != null && cur.moveToFirst()) {
                     int idx = cur.getColumnIndex("active");

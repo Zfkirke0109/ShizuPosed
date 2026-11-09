@@ -3,6 +3,7 @@ package com.shizuposed.manager.stealth;
 import android.content.Context;
 
 import com.shizuposed.manager.ShizukuHelper;
+import com.shizuposed.manager.status.ModuleStatusProvider;
 import com.shizuposed.manager.utils.Logger;
 import com.shizuposed.manager.utils.ShellUtils;
 
@@ -130,7 +131,7 @@ public final class XStealthStatusWriter {
             Logger.getInstance(c).d(TAG + ": statusAuthorityOf failed: "
                 + t.getMessage());
         }
-        return "com.shizuposed.manager.status";
+        return ModuleStatusProvider.AUTHORITY;
     }
 
     public static File writeLocal(Context c) {
